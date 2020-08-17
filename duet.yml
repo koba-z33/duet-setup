@@ -1,0 +1,31 @@
+- hosts: duet_host
+  roles:
+    - role: code-server
+      tags:
+        - never
+        - code-server
+    - role: build-code-oss
+      tags:
+        - never
+        - build-code-oss
+    - role: code-oss
+      tags:
+        - never
+        - code-oss
+    - role: nvm
+      tags:
+        - never
+        - nvm
+    - role: pyenv
+      tags:
+        - never
+        - pyenv
+    - role: rbenv
+      tags:
+        - never
+        - rbenv
+    - role: singularity
+      tags:
+        - never
+        - singularity
+

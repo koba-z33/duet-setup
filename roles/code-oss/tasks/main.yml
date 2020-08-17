@@ -1,0 +1,28 @@
+- name: check vscode-oss
+  stat:
+    path: /usr/bin/code-oss
+  register: code_oss
+
+- block:
+  - name: download code-oss.deb
+    get_url:
+      url: https://github.com/headmelted/codebuilds/releases/download/20-Jan-20/code-oss_1.42.0-1579483079_arm64.deb
+      dest: /tmp/code-oss_1.42.0-1579483079_arm64.deb
+
+  - name: apt code-oss.deb
+    become: yes
+    apt:
+      deb: /tmp/code-oss_1.42.0-1579483079_arm64.deb
+
+  when: not code_oss.stat.exists
+
+- name: install vscode extensions
+  shell:
+    cmd: code-oss --install-extension {{ item }}
+  with_items:
+    - 'vscodevim.vim'
+    - 'vscoss.vscode-ansible'
+    - 'redhat.vscode-yaml'
+    - 'oderwat.indent-rainbow'
+    - 'coenraads.bracket-pair-colorizer'
+

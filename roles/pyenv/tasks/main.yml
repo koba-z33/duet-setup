@@ -1,0 +1,42 @@
+- name: Install the package for pyenv
+  become: yes
+  apt:
+    pkg:
+      - build-essential
+      - libssl-dev
+      - zlib1g-dev
+      - libreadline-dev
+      - libbz2-dev
+      - libsqlite3-dev
+
+- name: check pyenv
+  stat:
+    path: $HOME/.pyenv/bin/pyenv
+  register: pyenv
+
+- block:
+  - name: git clone pyenv
+    git:
+      repo: https://github.com/pyenv/pyenv.git 
+      dest: ~/.pyenv
+
+  - name: edit bashrc for pyenv
+    lineinfile:
+      path: ~/.bashrc
+      line: '{{ item }}'
+    with_items:
+      - 'export PYENV_ROOT="$HOME/.pyenv"'
+      - 'export PATH="$PYENV_ROOT/bin:$PATH"'
+      - 'eval "$(pyenv init -)"'
+    
+  when: not pyenv.stat.exists
+
+- name: pyenv install {{ python_version }} and set global
+  shell:
+    cmd: |
+      PATH="$HOME/.pyenv/bin:$PATH"
+      pyenv install {{ python_version }}
+      pyenv global {{ python_version }}
+  args:
+    creates: "$HOME/.pyenv/versions/{{ python_version }}/bin/python"
+  

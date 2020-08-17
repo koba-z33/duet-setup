@@ -1,0 +1,69 @@
+- name: Install the package for singularity
+  become: yes
+  apt:
+    pkg:
+      - build-essential
+      - libssl-dev
+      - uuid-dev
+      - libgpgme11-dev
+      - squashfs-tools
+      - libseccomp-dev
+      - wget
+      - pkg-config
+      - git
+      - cryptsetup
+      - uidmap
+
+- name: check go
+  stat:
+    path: /usr/local/go
+  register: go_stat
+
+- block:
+  - name: Download file go.tgz {{ go_version }}
+    become: yes
+    get_url:
+      url: https://golang.org/dl/go{{ go_version }}.linux-arm64.tar.gz
+      dest: /tmp/go{{ go_version }}.tgz
+
+  - name: tar xvzf -C /usr/local/ go.tgz
+    become: yes
+    unarchive:
+      src: /tmp/go{{ go_version }}.tgz
+      dest: /usr/local
+
+  when: not go_stat.stat.exists
+
+- name: edit bashrc for go
+  lineinfile:
+    path: ${HOME}/.bashrc
+    line: '{{ item }}'
+  with_items:
+    - 'export GOPATH=${HOME}/go'
+    - 'export PATH="/usr/local/go/bin:$PATH"'
+
+- name: go get dep
+  shell:
+    cmd: '/usr/local/go/bin/go get -u -v github.com/golang/dep/cmd/dep'
+
+- name: mkdir ${HOME}/go/src/github.com/sylabs
+  file:
+    path: ${HOME}/go/src/github.com/sylabs
+    state: directory
+
+- name: git clone https://github.com/sylabs/singularity.git
+  git:
+    repo: https://github.com/sylabs/singularity.git
+    dest: ${HOME}/go/src/github.com/sylabs/singularity
+    version: '{{ singularity_version }}'
+
+- name: make singularity
+  shell:
+    cmd: |
+      GOPATH=${HOME}/go
+      PATH="/usr/local/go/bin:$PATH"
+      ./mconfig --without-suid
+      make -C builddir
+      sudo make -C builddir install
+    chdir: ${HOME}/go/src/github.com/sylabs/singularity
+    creates: /usr/local/bin/singularity

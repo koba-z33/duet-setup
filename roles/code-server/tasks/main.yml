@@ -1,0 +1,50 @@
+- name: check vscode-server
+  stat:
+    path: /usr/bin/code-server
+  register: code_server
+
+- block:
+  - name: download install.sh
+    get_url:
+      url: https://code-server.dev/install.sh
+      dest: /tmp/code_server_install.sh
+
+  - name: exec install.sh
+    shell:
+      cmd: /bin/bash /tmp/code_server_install.sh
+
+  - name: systemctl --user enable --now code-server
+    systemd:
+      name: code-server
+      enabled: yes
+      state: started
+      scope: user
+
+  - name: edit vscode-server config for none password port 18080
+    lineinfile:
+      path: "~/.config/code-server/config.yaml"
+      regexp: '{{ item.regexp }}'
+      line: '{{ item.line }}'
+    with_items:
+      - regexp: '^auth: .*'
+        line: 'auth: none'
+      - regexp: '^bind-addr: 127.0.0.1:8080'
+        line: 'bind-addr: 127.0.0.1:18080'
+
+  - name: systemctl --user enable --now code-server
+    systemd:
+      name: code-server
+      enabled: yes
+      state: restarted
+      scope: user
+  when: not code_server.stat.exists
+
+- name: install vscode extensions
+  shell:
+    cmd: code-server --install-extension {{ item }}
+  with_items:
+    - 'vscodevim.vim'
+    - 'vscoss.vscode-ansible'
+    - 'redhat.vscode-yaml'
+    - 'oderwat.indent-rainbow'
+    - 'coenraads.bracket-pair-colorizer'

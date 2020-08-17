@@ -1,0 +1,45 @@
+- name: Install the package for rbenv
+  become: yes
+  apt:
+    pkg:
+      - build-essential
+      - autoconf 
+      - bison
+      - build-essential
+      - libssl-dev
+      - libyaml-dev
+      - libreadline6-dev
+      - zlib1g-dev
+      - libncurses5-dev
+      - libffi-dev
+      - libgdbm6
+      - libgdbm-dev
+      - libdb-dev
+
+- name: git clone rbenv
+  git:
+    repo: https://github.com/rbenv/rbenv.git 
+    dest: ~/.rbenv
+
+- name: git clone ruby-build
+  git:
+    repo: https://github.com/rbenv/ruby-build.git
+    dest: ~/.rbenv/plugins/ruby-build
+
+- name: edit bashrc for rbenv
+  lineinfile:
+    path: ~/.bashrc
+    line: '{{ item }}'
+  with_items:
+    - 'export PATH="$HOME/.rbenv/bin:$PATH"'
+    - 'eval "$(rbenv init -)"'
+  
+- name: rbenv install {{ ruby_version }} and global
+  shell: 
+    cmd: |
+      PATH="$HOME/.rbenv/bin:$PATH"
+      rbenv install --skip-existing {{ ruby_version }}
+      rbenv rehash
+      rbenv global {{ ruby_version }}
+  args:
+    creates: "$HOME/.rbenv/versions/{{ ruby_version }}/bin/ruby"
